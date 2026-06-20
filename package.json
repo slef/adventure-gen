@@ -1,0 +1,29 @@
+{
+  "name": "adventure-gen",
+  "version": "0.1.0",
+  "description": "Client-side point-and-click adventure compiler prototype.",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "test": "civet --typecheck",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@danielx/civet": "^0.11.13",
+    "@danielx/hera": "^0.9.8",
+    "@opentelemetry/api": "^1.9.1",
+    "@tanstack/ai": "^0.31.0",
+    "@tanstack/ai-openrouter": "^0.13.4",
+    "esbuild": "^0.28.1",
+    "solid-js": "^1.9.13",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vite-plugin-solid": "^2.11.12",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "sass": "^1.101.0"
+  }
+}

@@ -1,0 +1,408 @@
+:root
+  --page: #f3f5f7
+  --panel: #ffffff
+  --panel-border: #d6dde5
+  --text: #1d252c
+  --strong: #111820
+  --muted: #667280
+  --field: #ffffff
+  --field-border: #aeb9c5
+  --accent: #2f6f7e
+  --accent-strong: #174d59
+  --accent-soft: #e7f2f3
+  --danger: #a33a2b
+  --danger-soft: #fff0ed
+  --ok: #24723a
+  --ok-soft: #e7f4eb
+  --code: #f7fafc
+  --shadow: 0 10px 24px rgba(20, 28, 36, 0.08)
+  color: var(--text)
+  background: var(--page)
+  color-scheme: light dark
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
+
+@media (prefers-color-scheme: dark)
+  :root
+    --page: #101417
+    --panel: #171d22
+    --panel-border: #313b45
+    --text: #e7edf1
+    --strong: #f5f8fb
+    --muted: #a3afba
+    --field: #10171d
+    --field-border: #4a5865
+    --accent: #7fc5d1
+    --accent-strong: #b4e5ec
+    --accent-soft: #14232a
+    --danger: #ff9b8d
+    --danger-soft: #2b1715
+    --ok: #90d8a2
+    --ok-soft: #17271b
+    --code: #10171d
+    --shadow: 0 14px 32px rgba(0, 0, 0, 0.28)
+
+*
+  box-sizing: border-box
+
+body
+  margin: 0
+  min-width: 320px
+
+button,
+input,
+select,
+textarea
+  font: inherit
+
+button
+  border: 0
+  border-radius: 6px
+  padding: 8px 12px
+  color: #ffffff
+  background: var(--accent)
+  font-weight: 800
+  cursor: pointer
+
+  &:hover:not(:disabled)
+    background: var(--accent-strong)
+
+  &:disabled
+    opacity: 0.55
+    cursor: wait
+
+input,
+select,
+textarea
+  width: 100%
+  border: 1px solid var(--field-border)
+  border-radius: 6px
+  padding: 8px 10px
+  color: var(--strong)
+  background: var(--field)
+
+  &:focus
+    outline: 3px solid color-mix(in srgb, var(--accent) 24%, transparent)
+    border-color: var(--accent)
+
+textarea
+  resize: vertical
+
+pre
+  min-height: 140px
+  max-height: 560px
+  margin: 0
+  overflow: auto
+  white-space: pre-wrap
+  word-break: break-word
+  border: 1px solid var(--panel-border)
+  border-radius: 6px
+  padding: 10px
+  color: var(--text)
+  background: var(--code)
+
+h1,
+h2,
+h3,
+p
+  margin-top: 0
+
+h1
+  margin-bottom: 4px
+  font-size: 1.45rem
+  line-height: 1.15
+
+h2
+  margin-bottom: 0
+  font-size: 1.08rem
+  line-height: 1.2
+
+h3
+  margin: 14px 0 6px
+  font-size: 0.98rem
+
+p
+  color: var(--muted)
+
+label
+  display: grid
+  gap: 6px
+
+  > span
+    color: var(--muted)
+    font-size: 0.9rem
+    font-weight: 800
+
+.app-shell
+  width: min(1440px, calc(100vw - 28px))
+  margin: 14px auto 24px
+  display: grid
+  gap: 12px
+
+.topbar,
+.status-strip,
+.panel
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+  background: var(--panel)
+  box-shadow: var(--shadow)
+
+.topbar
+  display: flex
+  align-items: start
+  justify-content: space-between
+  gap: 18px
+  padding: 14px
+
+  p
+    margin-bottom: 0
+
+.status-strip
+  display: flex
+  align-items: center
+  justify-content: space-between
+  gap: 16px
+  min-height: 42px
+  padding: 9px 12px
+
+.tabs,
+.button-row,
+.verbs,
+.inventory
+  display: flex
+  align-items: center
+  flex-wrap: wrap
+  gap: 7px
+
+.tabs
+  flex-wrap: nowrap
+  padding: 4px
+  border: 1px solid var(--field-border)
+  border-radius: 8px
+  background: var(--accent-soft)
+
+.tab-button
+  min-width: 86px
+  color: var(--accent-strong)
+  background: transparent
+
+  &.is-active
+    color: #ffffff
+    background: var(--accent)
+
+.workspace
+  display: grid
+  gap: 12px
+
+.two-col
+  grid-template-columns: minmax(360px, 0.92fr) minmax(360px, 1fr)
+
+.game-layout
+  grid-template-columns: minmax(520px, 1fr) minmax(320px, 420px)
+
+.panel
+  min-width: 0
+  padding: 14px
+  display: grid
+  gap: 12px
+  align-content: start
+
+.section-header
+  display: grid
+  gap: 4px
+
+.row-header
+  grid-template-columns: minmax(0, 1fr) auto
+  align-items: center
+  gap: 12px
+
+.compact button
+  padding: 7px 10px
+
+.field-grid
+  display: grid
+  grid-template-columns: minmax(220px, 1fr) minmax(150px, 0.34fr)
+  gap: 10px
+
+.checkbox-row
+  display: flex
+  align-items: center
+  gap: 8px
+  width: fit-content
+
+  input
+    width: 18px
+    height: 18px
+
+.file-button
+  width: fit-content
+  display: inline-grid
+  place-items: center
+  border-radius: 6px
+  padding: 8px 12px
+  color: #ffffff
+  background: var(--accent)
+  font-weight: 800
+  cursor: pointer
+
+  input
+    display: none
+
+.hidden-input
+  display: none
+
+.json-editor
+  min-height: 640px
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace
+  font-size: 0.86rem
+
+.error-text
+  color: var(--danger)
+  font-weight: 700
+  text-align: right
+
+.muted
+  color: var(--muted)
+
+.verifier-badge
+  width: fit-content
+  border-radius: 999px
+  padding: 6px 10px
+  font-weight: 900
+
+  &.ok
+    color: var(--ok)
+    background: var(--ok-soft)
+
+  &.bad
+    color: var(--danger)
+    background: var(--danger-soft)
+
+.verifier ul,
+.hint-list
+  margin: 0
+  padding-left: 20px
+
+.verifier ol
+  margin-top: 0
+  padding-left: 22px
+
+.game-panel
+  gap: 10px
+
+.room-stage
+  position: relative
+  overflow: hidden
+  width: 100%
+  aspect-ratio: 16 / 9
+  min-height: 320px
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+  background: linear-gradient(180deg, #20383f 0%, #6e7c7d 48%, #242c2e 100%)
+
+.room-backdrop
+  position: absolute
+  inset: 0
+  display: grid
+  align-content: start
+  gap: 6px
+  padding: 18px
+  color: #ffffff
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7)
+
+  h3
+    margin: 0
+    font-size: clamp(1.1rem, 1.8vw, 1.7rem)
+
+  p
+    max-width: 70ch
+    color: #eef7f8
+
+.hotspot
+  position: absolute
+  display: grid
+  place-items: center
+  overflow: hidden
+  border: 1px solid rgba(255, 255, 255, 0.65)
+  padding: 2px 4px
+  color: #ffffff
+  background: rgba(47, 111, 126, 0.72)
+  font-size: clamp(0.68rem, 1vw, 0.9rem)
+  line-height: 1.1
+  text-align: center
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65)
+
+  &.item
+    background: rgba(116, 92, 29, 0.82)
+
+  &.npc
+    background: rgba(89, 63, 121, 0.8)
+
+  &.object
+    background: rgba(42, 96, 53, 0.82)
+
+  &.exit
+    background: rgba(28, 45, 51, 0.8)
+
+.verbs
+  padding: 4px
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+  background: var(--accent-soft)
+
+  button
+    color: var(--accent-strong)
+    background: transparent
+
+    &.is-active
+      color: #ffffff
+      background: var(--accent)
+
+.inventory
+  min-height: 44px
+  padding: 8px
+  border: 1px solid var(--panel-border)
+  border-radius: 8px
+
+  strong
+    margin-right: 6px
+
+  button
+    color: var(--accent-strong)
+    background: var(--accent-soft)
+
+    &.is-active
+      color: #ffffff
+      background: var(--accent)
+
+.side-panel
+  pre
+    max-height: 320px
+
+.win-text
+  color: var(--ok)
+  font-weight: 900
+
+@media (max-width: 980px)
+  .app-shell
+    width: min(100vw - 20px, 760px)
+    margin-top: 10px
+
+  .topbar
+    display: grid
+
+  .tabs
+    width: 100%
+
+  .tab-button
+    flex: 1
+
+  .two-col,
+  .game-layout,
+  .field-grid
+    grid-template-columns: 1fr
+
+  .room-stage
+    min-height: 250px
+
+  .row-header
+    grid-template-columns: 1fr
