@@ -1,20 +1,25 @@
-Yes, things **near** this exist, but I don’t think there is yet a polished “drop in a novel → get a playable Monkey Island / Zork / King’s Quest-style adventure in that world” system that reliably works end-to-end.
+## Proposed Architecture
 
-The closest existing categories are:
+### 0. Initial implementation target
 
-1. **AI text adventure platforms** such as AI Dungeon and newer AI Game Master systems. These are good at freeform narrative, but they often feel like chat/RPG improvisation rather than a real adventure game with puzzles, inventory, locations, gates, and solvable structure. Some 2026 comparison articles still frame AI Dungeon as the open-ended option, while alternatives add memory, rules, multiplayer, maps, or visual storytelling layers. ([Dungeons Deep][1])
+Start as a **client-side JavaScript web app**, with source written in the same stack as [`edemaine/client-side-tanstack-ai-demo`](https://github.com/edemaine/client-side-tanstack-ai-demo):
 
-2. **Interactive fiction engines** such as Inform 7, Twine, Quest/QuestJS, Ink, etc. QuestJS is a JavaScript rewrite of Quest for building parser-style interactive fiction. These give you proper game structure, but not automatic generation from novels. ([GitHub][2])
+* **Civet** for app logic and JSX-like UI source.
+* **Solid** for reactive state and component rendering.
+* **Vite** with `vite-plugin-solid` and `@danielx/civet/vite`.
+* **Sass** for styling.
+* **TanStack AI** with OpenRouter adapters for bring-your-own-key text and image calls.
+* **No backend** for the first version.
 
-3. **Classic adventure tech** such as ScummVM, Adventure Game Studio, Godot, Ren’Py, etc. ScummVM itself is mostly for running classic adventure games from existing data files, not for creating new AI games; it replaces old executables so old adventure games can run on modern systems. ([ScummVM Documentation][3])
+The user enters their own OpenRouter key in the browser. The app may offer an optional “remember key” checkbox using `localStorage`, but the key is never shipped with the app and never sent through a server controlled by this project.
 
-4. **Research prototypes**. The most directly relevant is **Story2Game**, a 2025 paper that generates interactive fiction by first generating a story, then deriving game state, actions, preconditions, and effects so the player can interact with it. That is very close to the architecture you are imagining, though it is research rather than a consumer-ready system. ([arXiv][4])
+The first app should have three major panels:
 
-The key design lesson is: **do not make the LLM the whole game engine**. If the LLM simply narrates whatever the player types, you get an entertaining hallucination machine, not a real adventure game. Adventure games need persistent state, solvable puzzles, inventory constraints, location topology, NPC knowledge, event triggers, and “you can’t do that yet” logic.
+* **Source / Generation**: paste or upload source text, configure model IDs and reasoning level, then generate the world bible and adventure design.
+* **Design Workspace**: inspect and edit the structured game design before compiling it into the playable form.
+* **Playable Game**: run the generated point-and-click adventure in the same web app.
 
-A good system would look like this.
-
-## The architecture I would build
+The app should save and load the computed game design as a structured project file, for example `adventure-design.json`. Use the browser File System Access API when available for open/save/save-as, with a fallback to `<input type="file">` import and downloaded JSON export for browsers that do not expose direct file handles.
 
 ### 1. Ingest the source world
 
@@ -70,37 +75,81 @@ Ballroom → enter only if invitation forged
 
 This is the part most AI story tools neglect. Without a puzzle graph, the game has no “game”.
 
-### 3. Compile the spec into a real engine
+### 3. Compile the spec into a custom web engine
 
-You have a few plausible targets:
+For the first implementation, build a custom **point-and-click adventure engine** in the same Civet + Solid + Vite app instead of targeting Inform, QuestJS, Godot, Adventure Game Studio, or Ren'Py.
 
-For **text adventure / parser style**, use:
+The engine should be deterministic and data-driven. It loads the generated adventure design and runs it as a classic SCUMM / Sierra-style game:
 
-* **Inform 7** if you want classic literary interactive fiction.
-* **QuestJS** if you want a web-native JavaScript engine. ([GitHub][2])
-* **Ink** if you want branching narrative with variables and conditions.
-* **Twine** if you want hypertext-style exploration.
+* room background
+* exits
+* hotspots
+* inventory
+* verb palette
+* selected verb / selected inventory item
+* dialogue topics
+* event flags
+* preconditions and effects
+* win conditions
+* optional fail states
 
-For **old text+image / point-and-click style**, use:
+The initial verb set should prefer point-and-click conventions over a parser:
 
-* **Godot** for a modern open-source engine.
-* **Adventure Game Studio** for a Sierra/LucasArts-like workflow.
-* **Ren’Py** if it leans more visual novel.
-* A custom web app if you want to move quickly.
+```text
+LOOK AT / PICK UP / USE / TALK TO / GIVE / OPEN / PUSH / WALK TO
+```
 
-I would probably prototype as a **web game** first: React or Svelte frontend, a small Python/Node backend, and a game-state engine that stores rooms, objects, inventory, NPC state, and event flags.
+Every interaction should be a structured action. For example, clicking `USE` and then a key on a locked cabinet dispatches an action like:
+
+```json
+{
+  "verb": "use",
+  "actor": "player",
+  "item": "brass_key",
+  "target": "locked_cabinet",
+  "room": "antique_shop"
+}
+```
+
+The engine checks the action against the design spec, mutates state only through declared effects, and returns a result object for the UI to render. The LLM can generate descriptions, hints, barks, and dialogue variants, but the engine decides whether the action is legal and what state changes happen.
+
+The project file should store both generated design-time data and playable runtime data:
+
+```json
+{
+  "schema_version": 1,
+  "source": {
+    "title": "...",
+    "text_digest": "..."
+  },
+  "world_bible": {},
+  "adventure_design": {},
+  "compiled_game": {
+    "start_room": "foyer",
+    "rooms": {},
+    "items": {},
+    "npcs": {},
+    "rules": [],
+    "win_conditions": []
+  },
+  "assets": {
+    "room_images": {},
+    "portrait_images": {}
+  }
+}
+```
 
 ### 4. Use the LLM only where it helps
 
 The LLM should do:
 
-* natural-language parsing: “use the rusty knife to pry open the drawer”
 * NPC dialogue
 * flavor text
 * hints
 * alternative phrasings
 * dynamic descriptions
 * filling in non-critical details
+* design repair suggestions when the verifier finds a reachability problem
 
 The deterministic engine should control:
 
@@ -157,44 +206,36 @@ This is where your CS / formal-methods background could make the project unusual
 
 ## A minimal prototype
 
-I would start with a **text + still image** adventure, not full point-and-click.
+Start with a **client-side point-and-click adventure builder and runner**, not a parser-style text adventure.
 
 MVP:
 
-1. Upload a public-domain novella or your own short story.
-2. Extract a world bible.
-3. Generate 8–12 rooms.
-4. Generate 5–8 inventory objects.
-5. Generate 3–5 puzzles.
-6. Generate one main quest and one optional side quest.
-7. Use a deterministic state machine.
-8. Let the player type natural-language commands.
-9. Use image generation for room illustrations and NPC portraits.
-10. Use an LLM as “parser + narrator”, but never as the sole source of truth.
+1. Scaffold the app from the [`edemaine/client-side-tanstack-ai-demo`](https://github.com/edemaine/client-side-tanstack-ai-demo) pattern: `package.json`, `vite.config.mjs`, `src/main.civet`, `src/styles.sass`, `pnpm dev`, `pnpm test`, and `pnpm build`.
+2. Accept pasted source text first; add file upload after the generation loop is stable.
+3. Let the user enter an OpenRouter API key and editable text/image model IDs.
+4. Generate a world bible.
+5. Generate 6–10 rooms, 5–8 inventory objects, 3–5 puzzles, 2–4 NPCs, a location graph, and a puzzle dependency graph.
+6. Compile the design into the in-browser point-and-click engine format.
+7. Render one playable room at a time with a background image or placeholder, visible hotspots, exits, inventory, verb buttons, and a transcript/status line.
+8. Support `LOOK AT`, `PICK UP`, `USE`, `TALK TO`, and `WALK TO` first; add `GIVE`, `OPEN`, and `PUSH` once rule handling is solid.
+9. Save and load the computed design/project JSON from the local file system.
+10. Run a deterministic reachability check before enabling “Play”, and show verifier errors in the design workspace.
 
-A command loop might work like this:
+The shortest useful loop is:
 
 ```text
-Player: talk to the old jeweler about the blue diamond
-
-LLM parser:
-{
-  "intent": "talk",
-  "target": "old_jeweler",
-  "topic": "blue_diamond"
-}
-
-Game engine:
-- Is old_jeweler in current room? yes.
-- Does player know about blue_diamond? yes.
-- Has player shown the sealed letter? no.
-- Return dialogue state: evasive_answer.
-
-LLM narrator:
-"The jeweler polishes his spectacles and pretends not to hear you..."
+Paste source text
+  ↓
+Generate world bible
+  ↓
+Generate adventure design
+  ↓
+Verify room and puzzle reachability
+  ↓
+Save adventure-design.json
+  ↓
+Play in the embedded point-and-click engine
 ```
-
-This preserves the feeling of parser games while avoiding the brittleness of exact commands like `ASK JEWELER ABOUT DIAMOND`.
 
 ## A stronger “SCUMM-like” version
 
@@ -236,47 +277,67 @@ A room could be represented as:
 }
 ```
 
-Then a Godot or web frontend renders the background and hotspots. The LLM generates descriptions, hints, and dialogue, but the interaction model remains classic.
+Then the custom Solid renderer displays the background and hotspots. The LLM generates descriptions, hints, and dialogue, but the interaction model remains classic. The first visual implementation can use generated still backgrounds plus absolutely positioned hotspot regions. Later versions can add walkboxes, character sprites, animated cursors, verb-object sentence construction, dialogue portraits, and Sierra-style close-up views without changing the core data model.
 
-## Existing things worth looking at
+## Related Work
+
+Things **near** this exist, but there does not appear to be a polished “drop in a novel → get a playable Monkey Island / Zork / King’s Quest-style adventure in that world” system that reliably works end-to-end.
+
+The closest existing categories are:
+
+1. **AI text adventure platforms** such as AI Dungeon and newer AI Game Master systems. These are good at freeform narrative, but they often feel like chat/RPG improvisation rather than a real adventure game with puzzles, inventory, locations, gates, and solvable structure. Some 2026 comparison articles still frame AI Dungeon as the open-ended option, while alternatives add memory, rules, multiplayer, maps, or visual storytelling layers. ([Dungeons Deep][1])
+
+2. **Interactive fiction engines** such as Inform 7, Twine, Quest/QuestJS, Ink, etc. QuestJS is a JavaScript rewrite of Quest for building parser-style interactive fiction. These give you proper game structure, but not automatic generation from novels. ([GitHub][2])
+
+3. **Classic adventure tech** such as ScummVM, Adventure Game Studio, Godot, Ren’Py, etc. ScummVM itself is mostly for running classic adventure games from existing data files, not for creating new AI games; it replaces old executables so old adventure games can run on modern systems. ([ScummVM Documentation][3])
+
+4. **Research prototypes**. The most directly relevant is **Story2Game**, a 2025 paper that generates interactive fiction by first generating a story, then deriving game state, actions, preconditions, and effects so the player can interact with it. That is very close to the architecture you are imagining, though it is research rather than a consumer-ready system. ([arXiv][4])
+
+The key design lesson is: **do not make the LLM the whole game engine**. If the LLM simply narrates whatever the player types, you get an entertaining hallucination machine, not a real adventure game. Adventure games need persistent state, solvable puzzles, inventory constraints, location topology, NPC knowledge, event triggers, and “you can’t do that yet” logic.
 
 For inspiration rather than turnkey use:
 
 * **AI Dungeon**: useful to study open-ended AI narrative, but too unconstrained for real puzzle adventure structure. ([Dungeons Deep][1])
-* **QuestJS**: good candidate for a web-based interactive fiction target. ([GitHub][2])
+* **QuestJS**: useful inspiration for web-based interactive fiction data modeling, but not the initial engine target. ([GitHub][2])
 * **Story2Game**: probably the most relevant research blueprint for generating playable interactive fiction from generated narrative structure. ([arXiv][4])
-* **ScummVM**: useful as a reference for the classic adventure tradition, but not the engine I would use to create a new AI-native game. ([ScummVM Documentation][3])
+* **ScummVM**: useful as a reference for the classic adventure tradition, but not the right engine for creating a new AI-native game. ([ScummVM Documentation][3])
 * **Intra design notes**: a useful cautionary discussion; making “LLM text adventure” sounds easy because both are text-in/text-out, but real interactive fiction depends on puzzle structure and a very specific game loop. ([Ian Bicking][7])
 
-## My recommended build path
+## Recommended Build Path
 
-I would not start with “drop in two novels and generate a whole adventure.” That will produce something incoherent.
+Do not start with “drop in two novels and generate a whole adventure.” That will produce something incoherent.
 
-I would start with:
+Start with:
 
-**Phase 1: World Bible Generator**
-Upload a short story. Generate characters, places, objects, tone, and facts.
+**Phase 1: Client App Skeleton**
+Create the Civet + Solid + Vite + Sass app, copying the BYOK TanStack AI shape from [`edemaine/client-side-tanstack-ai-demo`](https://github.com/edemaine/client-side-tanstack-ai-demo). Keep the app browser-only.
 
-**Phase 2: Adventure Skeleton Generator**
-Generate a 10-room, 5-puzzle adventure with a dependency graph.
+**Phase 2: World Bible Generator**
+Paste or upload a short story. Generate characters, places, objects, tone, facts, and contradictions to avoid.
 
-**Phase 3: Playability Verifier**
-Translate puzzles into preconditions/effects and verify that the ending is reachable.
+**Phase 3: Adventure Skeleton Generator**
+Generate a point-and-click adventure design with rooms, exits, hotspots, NPCs, inventory objects, dialogue topics, verb responses, and a puzzle dependency graph.
 
-**Phase 4: Play Engine**
-Build a text adventure web frontend with natural-language command parsing.
+**Phase 4: Save / Load**
+Persist the computed project as JSON using the File System Access API where available, with import/export fallback. Include enough schema versioning to migrate early project files.
 
-**Phase 5: Images**
-Generate one image per room and character portrait. Add clickable hotspots later.
+**Phase 5: Playability Verifier**
+Translate puzzles into preconditions/effects and verify that the ending is reachable. Surface missing items, impossible gates, orphaned clues, and unused critical objects.
 
-**Phase 6: Style Control**
+**Phase 6: Point-and-Click Engine**
+Build the custom SCUMM/Sierra-style web engine: rooms, hotspots, exits, verbs, inventory, dialogue topics, flags, and deterministic action resolution.
+
+**Phase 7: Images**
+Generate or import one image per room and character portrait. Attach click regions to room images.
+
+**Phase 8: Style Control**
 Make the generated prose imitate the source’s mood, not necessarily its exact wording.
 
 The resulting system would feel much more like a real old adventure game than a chatbot.
 
-## The version I think is most promising
+## Most Promising Version
 
-A product I’d be excited by would be:
+The most promising product shape is:
 
 > **“Adventure Compiler”: upload a public-domain novel or your own manuscript, choose ‘Zork’, ‘Monkey Island’, ‘King’s Quest’, or ‘visual novel’ mode, and get a playable, verified mini-adventure with generated rooms, puzzles, inventory, dialogue, and illustrations.”**
 
